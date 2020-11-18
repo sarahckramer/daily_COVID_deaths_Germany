@@ -36,21 +36,21 @@ match_to_first_report <- function(dat_removed, dat_search) {
 # We may need to find some way (combo of pdfs on RKI's site and news articles) to fill in the early deaths
 
 # Get list of files for each month:
-file_list_March <- list.files('Maerz/', pattern = '.csv') # 27-31/03
-file_list_April <- list.files('April/', pattern = '.csv') # missing 1
-file_list_May <- list.files('Mai/', pattern = '.csv') # complete
-file_list_June <- list.files('Juni/', pattern = '.csv') # complete
+file_list_March <- list.files('data_RKI/Maerz/', pattern = '.csv') # 27-31/03
+file_list_April <- list.files('data_RKI/April/', pattern = '.csv') # missing 1
+file_list_May <- list.files('data_RKI/Mai/', pattern = '.csv') # complete
+file_list_June <- list.files('data_RKI/Juni/', pattern = '.csv') # complete
 # but could look at later too, if only because they could help rule out mistakenly-reported deaths
 
 # Check for missing:
 which(!unlist(lapply(str_pad(string = 1:30, width = 2, pad = 0), function(ix) {
-  file.exists(paste0('April/RKI_COVID19_2020-04-', ix, '.csv'))
+  file.exists(paste0('data_RKI/April/RKI_COVID19_2020-04-', ix, '.csv'))
 })))
 which(!unlist(lapply(str_pad(string = 1:31, width = 2, pad = 0), function(ix) {
-  file.exists(paste0('Mai/RKI_COVID19_2020-05-', ix, '.csv'))
+  file.exists(paste0('data_RKI/Mai/RKI_COVID19_2020-05-', ix, '.csv'))
 })))
 which(!unlist(lapply(str_pad(string = 1:30, width = 2, pad = 0), function(ix) {
-  file.exists(paste0('Juni/RKI_COVID19_2020-06-', ix, '.csv'))
+  file.exists(paste0('data_RKI/Juni/RKI_COVID19_2020-06-', ix, '.csv'))
 })))
 # only April 5 is missing - can get data from pdf
 
@@ -61,16 +61,16 @@ which(!unlist(lapply(str_pad(string = 1:30, width = 2, pad = 0), function(ix) {
 
 ### Read in all data ###
 list_march <- lapply(file_list_March, function(ix) {
-  read.csv(file = paste0('Maerz/', ix))
+  read.csv(file = paste0('data_RKI/Maerz/', ix))
 })
 list_april <- lapply(file_list_April, function(ix) {
-  read.csv(file = paste0('April/', ix))
+  read.csv(file = paste0('data_RKI/April/', ix))
 })
 # list_may <- lapply(file_list_May, function(ix) {
-#   read.csv(file = paste0('Mai/', ix))
+#   read.csv(file = paste0('data_RKI/Mai/', ix))
 # })
 # list_june <- lapply(file_list_June, function(ix) {
-#   read.csv(file = paste0('Juni/', ix))
+#   read.csv(file = paste0('data_RKI/Juni/', ix))
 # })
 
 # Set Datenstand columns to be year-month-day format:
@@ -350,6 +350,12 @@ new_deaths <- new_deaths[new_deaths$AnzahlTodesfall > 0, ]
 
 #######################################################################################################################
 
+### Output results ###
+# Write new deaths by date of reporting:
+write.csv(new_deaths, file = 'data_formatted/new_deaths_TEMP.csv', row.names = FALSE)
+
+#######################################################################################################################
+
 # TO EXPLORE:
 # Why last file in April smaller than two before??
 # Are all Bundeslaender contained in every data set??
@@ -357,12 +363,7 @@ new_deaths <- new_deaths[new_deaths$AnzahlTodesfall > 0, ]
 # (In other words, make sure cumulative equals reported on last day of April/June)
 # And obviously add in data from May and June!
 
-### Fill in missing date in April (05/04) ###
-
 ### Adjust dates (Refdatum always at least one ahead of reporting date) ###
-
-### Fill in missing data from March (09-26/03) ###
-
 
 # Maybe ultimately read in later data as well, to see if any of the reported deaths from first wave were later "retracted"?
 
