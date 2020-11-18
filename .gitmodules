@@ -1,0 +1,4 @@
+[submodule "CSV-Dateien-mit-Covid-19-Infektionen-"]
+    path = data_RKI
+    url = git@github.com:CharlesStr/CSV-Dateien-mit-Covid-19-Infektionen-.git
+    branch = master
