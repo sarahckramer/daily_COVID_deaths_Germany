@@ -82,19 +82,11 @@ new_deaths_march$Datenstand <- as.Date(as.numeric(as.character(new_deaths_march$
 # Remove where no new deaths:
 new_deaths_march <- new_deaths_march[new_deaths_march$AnzahlTodesfall > 0, ]
 
-#######################################################################################################################
+# Write to file:
+write.csv(new_deaths_march, file = 'data_formatted/new_deaths_missing_March.csv', row.names = FALSE)
 
-### "Confirm" counts against cumulative case count ###
-# Add data from March:
-a <- rbind(new_deaths_march, new_deaths)
-
-
-
-# Check cumulative totals at each date (though April 4) against reported values:
-
-
-
-
+# Clean up:
+rm(new_deaths_march)
 
 #######################################################################################################################
 
@@ -105,33 +97,23 @@ new_deaths_apr5 <- cbind(df_names,
                          c(367, 396, 24, 17, 6, 19, 56, 5, 89, 245, 32, 14, 32, 12, 18, 10),
                          c(316, 349, 22, 12, 6, 16, 42, 5, 85, 200, 29, 14, 24, 11, 17, 10))
 names(new_deaths_apr5)[4:6] <- c('Datenstand', 'new_t', 'new_tminus1')
+# Even though cumulative counts from official report on 04-04 don't match the dataset here completely, use this
+# process b/c we want the NEW deaths reported on 05-04, which we can only get by subtracting between reports
 
 # Subtract previous day's total from "current" day's total:
 new_deaths_apr5$AnzahlTodesfall <- new_deaths_apr5$new_t - new_deaths_apr5$new_tminus1
-
-
-
-
-# Check agreement with cumulative deaths up through April 4, as well as new deaths on April 6, in our dataset?
-# TO DO: Need to add March in first
-a <- rbind(new_deaths_march, new_deaths)
-aggregate(AnzahlTodesfall ~ Bundesland, data = a[a$Datenstand <= '2020-04-04', ], FUN = sum)
-# under-estimates by: 2, 3, 0, 1, 0, 0, 0, 0, -1, 2, 0, 0, 0, 0, 0, 0
-# under by 8, over by 1
-# So mostly okay, but actually overestimates deaths by 1 in Niedersachsen
-# I don't think it makes sense for our cumulative total to overestimate the reported amount - underestimate maybe,
-# since we might remove retracted cases on their original reporting date and not later, but overestimates don't
-# really seem to make sense
-aggregate(AnzahlTodesfall ~ Bundesland, data = a[a$Datenstand <= '2020-04-04', ], FUN = sum)$AnzahlTodesfall + new_deaths_apr5$AnzahlTodesfall
-
-
-
 
 # Remove where 0 deaths:
 new_deaths_apr5 <- new_deaths_apr5[new_deaths_apr5$AnzahlTodesfall > 0, ]
 
 # Remove unnecessary columns:
 new_deaths_apr5 <- new_deaths_apr5[, c(1:4, 7)]
+
+# Write to file:
+write.csv(new_deaths_apr5, file = 'data_formatted/new_deaths_missing_April5.csv', row.names = FALSE)
+
+# Clean up:
+rm(list = ls())
 
 #######################################################################################################################
 
