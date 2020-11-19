@@ -59,16 +59,24 @@ which(!unlist(lapply(str_pad(string = 1:30, width = 2, pad = 0), function(ix) {
 
 #######################################################################################################################
 
-### Read in all data ###
+### Read in and format data ###
+# source('src/read_data_to_list.R')
+
+
+
+
+
+
+
 list_march <- lapply(file_list_March, function(ix) {
   read.csv(file = paste0('data_RKI/Maerz/', ix))
 })
 list_april <- lapply(file_list_April, function(ix) {
   read.csv(file = paste0('data_RKI/April/', ix))
 })
-# list_may <- lapply(file_list_May, function(ix) {
-#   read.csv(file = paste0('data_RKI/Mai/', ix))
-# })
+list_may <- lapply(file_list_May, function(ix) {
+  read.csv(file = paste0('data_RKI/Mai/', ix))
+})
 # list_june <- lapply(file_list_June, function(ix) {
 #   read.csv(file = paste0('data_RKI/Juni/', ix))
 # })
@@ -82,11 +90,10 @@ list_april <- lapply(1:length(file_list_April), function(ix) {
   list_april[[ix]]$Datenstand <- as.Date(str_sub(file_list_April[[ix]], 13, 22), format = '%Y-%m-%d')
   list_april[[ix]]
 })
-
-
-
-
-
+list_may <- lapply(1:length(file_list_May), function(ix) {
+  list_may[[ix]]$Datenstand <- as.Date(str_sub(file_list_May[[ix]], 13, 22), format = '%Y-%m-%d')
+  list_may[[ix]]
+})
 
 # Clean up:
 rm(file_list_March, file_list_April, file_list_May, file_list_June)
@@ -95,40 +102,33 @@ rm(file_list_March, file_list_April, file_list_May, file_list_June)
 
 ### Format all data ###
 # Join all data into one list:
-list_covid_deaths <- c(list_march, list_april)
-rm(list_march, list_april)
+list_covid_deaths <- c(list_march, list_april, list_may)
+rm(list_march, list_april, list_may)
 
-# Standardize name of new deaths column:
-list_covid_deaths <- lapply(list_covid_deaths, function(ix) {
-  if ('Neuer.Todesfall' %in% names(ix)) {
-    names(ix)[names(ix) == 'Neuer.Todesfall'] <- 'NeuerTodesfall'
-  }
-  ix
-})
 
-# Standardize name of Bundesland ID column:
-list_covid_deaths <- lapply(list_covid_deaths, function(ix) {
-  if ('ï..IdBundesland' %in% names(ix)) {
-    names(ix)[names(ix) == 'ï..IdBundesland'] <- 'IdBundesland'
-  }
-  ix
-})
+print(lapply(list_covid_deaths, function(ix) {dim(ix)}))
 
-# Standardize name of Landkreis ID column:
-list_covid_deaths <- lapply(list_covid_deaths, function(ix) {
-  if ('Landkreis.ID' %in% names(ix)) {
-    names(ix)[names(ix) == 'Landkreis.ID'] <- 'IdLandkreis'
-  }
-  ix
-})
+# a <- list_april[[28]]; b <- list_april[[29]]
+# # b still has higher number of cumulative deaths and cases...
+# # cases grouped, so one row with count of 2 instead of 2 rows?
+# a <- a[a$NeuerTodesfall != -9, ]; b <- b[b$NeuerTodesfall != -9, ]
+# # now b is bigger than a
+
+
+# Standardize column names:
+source('src/standardize_relevant_column_names.R', encoding = 'UTF-8')
+
+
+
 
 # Keep only data on new deaths:
 list_covid_deaths <- lapply(list_covid_deaths, function(ix) {
-  if ('NeuerTodesfall' %in% names(ix)) {
-    ix[ix[, 'NeuerTodesfall'] %in% c(-1, 1), ]
-  } else {
-    print('Error.')
-  }
+  ix[ix[, 'NeuerTodesfall'] %in% c(-1, 1), ]
+  # if ('NeuerTodesfall' %in% names(ix)) {
+  #   ix[ix[, 'NeuerTodesfall'] %in% c(-1, 1), ]
+  # } else {
+  #   print('Error.')
+  # }
 })
 
 # If NeuerTodesfall == 1: Count this as a new death for the current Datenstand
@@ -197,37 +197,67 @@ rm(list_removed)
 df_covid_deaths_RED <- do.call('rbind', list_covid_deaths_RED)
 rm(list_covid_deaths_RED)
 
-# # Unify format of Meldedatum?:
-# df_removed$Meldedatum_a <- as.Date(df_removed$Meldedatum, format = '%Y-%m-%d')
-# df_removed$Meldedatum_a[is.na(df_removed$Meldedatum_a)] <- as.Date(df_removed$Meldedatum[is.na(df_removed$Meldedatum_a)], format = '%m/%d/%Y')
-# df_removed$Meldedatum_a[is.na(df_removed$Meldedatum_a)] <- as.Date(df_removed$Meldedatum[is.na(df_removed$Meldedatum_a)], format = '%Y/%m/%d')
-# df_removed$Meldedatum_a[is.na(df_removed$Meldedatum_a)] <- as.Date(df_removed$Meldedatum[is.na(df_removed$Meldedatum_a)], format = '%d.%m.%Y')
-# 
-# # obviously the August one is wrong - switch format:
-# dates_to_update <- df_removed$Meldedatum_a[df_removed$Meldedatum_a > as.Date('2020-07-01', format = '%Y-%m-%d')]
-# dates_to_update <- as.Date(paste(str_sub(dates_to_update, 1, 4), str_sub(dates_to_update, 9, 10),
-#                                  str_sub(dates_to_update, 6, 7), sep = '-'), format = '%Y-%m-%d')
-# df_removed$Meldedatum_a[df_removed$Meldedatum_a > as.Date('2020-07-01', format = '%Y-%m-%d')] <- dates_to_update
-# 
-# df_removed$Meldedatum <- df_removed$Meldedatum_a
-# df_removed$Meldedatum_a <- NULL
-# rm(dates_to_update)
-# # Might all mess with ability to match on Meldedatum in next step, though
+
+
+
+
+
+
+# Unify format of Meldedatum:
+standardize_date_format <- function(dat, colDate) {
+  # Try several possible formats:
+  dat$Meldedatum_a <- as.Date(dat[, colDate], format = '%Y-%m-%d')
+  print(summary(dat$Meldedatum_a))
+  dat$Meldedatum_a[is.na(dat$Meldedatum_a)] <- as.Date(dat[, colDate][is.na(dat$Meldedatum_a)], format = '%m/%d/%Y')
+  print(summary(dat$Meldedatum_a))
+  dat$Meldedatum_a[is.na(dat$Meldedatum_a)] <- as.Date(dat[, colDate][is.na(dat$Meldedatum_a)], format = '%d/%m/%Y')
+  print(summary(dat$Meldedatum_a))
+  dat$Meldedatum_a[is.na(dat$Meldedatum_a)] <- as.Date(dat[, colDate][is.na(dat$Meldedatum_a)], format = '%Y/%m/%d')
+  print(summary(dat$Meldedatum_a))
+  dat$Meldedatum_a[is.na(dat$Meldedatum_a)] <- as.Date(dat[, colDate][is.na(dat$Meldedatum_a)], format = '%d.%m.%Y')
+  print(summary(dat$Meldedatum_a))
+  
+  # Replace old dates with newly-formatted dates:
+  dat[, colDate] <- dat$Meldedatum_a
+  dat <- dat[, 1:(dim(dat)[2] - 1)]
+  
+  # Correct obvious errors (date cannot be after end of June, or before first reported case (01-27)):
+  dates_to_update <- dat[, colDate][dat[, colDate] >= as.Date('2020-07-01', format = '%Y-%m-%d') |
+                                   dat[, colDate] < as.Date('2020-02-10', format = '%Y-%m-%d')]
+  print(dates_to_update)
+  dates_to_update <- as.Date(paste(str_sub(dates_to_update, 1, 4), str_sub(dates_to_update, 9, 10),
+                                   str_sub(dates_to_update, 6, 7), sep = '-'), format = '%Y-%m-%d')
+  print(dates_to_update)
+  dat[, colDate][dat[, colDate] >= as.Date('2020-07-01', format = '%Y-%m-%d') |
+                dat[, colDate] < as.Date('2020-02-10', format = '%Y-%m-%d')] <- dates_to_update
+  
+  # Return updated data frame:
+  dat
+}
+
+df_removed <- standardize_date_format(df_removed, 'Meldedatum')
+df_covid_deaths_RED <- standardize_date_format(df_covid_deaths_RED, 'Meldedatum')
+
+
+
+
+
+
+
 
 # For each case in df_removed, find where first reported as a death:
-df_removed$Meldedatum <- as.character(df_removed$Meldedatum)
-df_covid_deaths_RED$Meldedatum <- as.character(df_covid_deaths_RED$Meldedatum)
-time_of_first_reporting <- match_to_first_report(df_removed, df_covid_deaths_RED)
+# df_removed$Meldedatum <- as.character(df_removed$Meldedatum)
+# df_covid_deaths_RED$Meldedatum <- as.character(df_covid_deaths_RED$Meldedatum)
+time_of_first_reporting <- match_to_first_report(df_removed, df_covid_deaths_RED) # possible this misses reports due to weird date formats, though
 
 # for (i in 1:length(time_of_first_reporting)) {
 #   print(df_removed[i, ])
 #   print(time_of_first_reporting[[i]])
 #   print('------------------------------------------------------------------------------------------------------------')
 # }; rm(i)
+
 # Often it's from the day before, but there are also cases that can't be found anywhere in the previous data
 # Could first subtract out/remove rows for unambiguous matches, then match again and continue the process...
-# I guess if there are no matches (no previous timepoint at which the case shows up as a new death), there's
-# actually no need to subtract anything
 
 # Ideally, every death should show up first as a new death (NeuerTodesfall == 1), then a not-new death at all later timepoints -
 # is this the case?
@@ -243,6 +273,11 @@ time_of_first_reporting <- match_to_first_report(df_removed, df_covid_deaths_RED
 n_matching_records <- unlist(lapply(time_of_first_reporting, function(ix) {
   dim(ix)[1]
 })) # identify how many matching records
+# 43 with no matching records; 94 with no matching records
+# after updating date formats, down to 20 (from 94) with no matches!
+
+# Calculate how much we may expect to ultimately overestimate cumulative deaths:
+sum(df_removed$AnzahlTodesfall[which(n_matching_records == 0)]) # -21 (through May)
 
 df_removed <- df_removed[which(n_matching_records > 0), ]
 
@@ -252,54 +287,102 @@ n_matching_records <- unlist(lapply(time_of_first_reporting, function(ix) {
   dim(ix)[1]
 }))
 
-# NOTE: Function does not actually match on whether the number of deaths being retracted matches the number originally
-# enterred in the "matching" entry; so far this isn't a problem, but check before proceeding
 
-# for (i in 1:length(n_matching_records)) {
-#   print(df_removed[i, ])
-#   print(time_of_first_reporting[[i]])
-#   print('------------------------------------------------------------------------------------------------------------')
-# }; rm(i)
+
+
+
 
 # Then, subtract from the relevant totals where a single, unambiguous record is found of a retracted deaths original
 # reporting as a new death:
-for (i in which(n_matching_records == 1)) {
-  df_match <- time_of_first_reporting[[i]]
-  
-  # First, identify Bundesland and date, and subtract relevant # of deaths from "new_deaths"
-  new_deaths$AnzahlTodesfall[new_deaths$IdBundesland == df_match$IdBundesland & new_deaths$Datenstand == df_match$Datenstand] <-
-    new_deaths$AnzahlTodesfall[new_deaths$IdBundesland == df_match$IdBundesland & new_deaths$Datenstand == df_match$Datenstand] +
-    df_removed[i, 'AnzahlTodesfall'] # values in df_removed are negative, so add retracted deaths to # of deaths on relevant date/Bundesland
-  
-  # Also, remove the matched case from df_covid_deaths_RED, to prevent multiple cases matching to the same record:
-  df_covid_deaths_RED <- df_covid_deaths_RED[-which(rownames(df_covid_deaths_RED) == rownames(df_match)), ]
-  
-  # Now, re-search df_covid_deaths_RED to ensure that all with 1 match (except current) still have 1 match:
-  time_of_first_reporting_COMP <- match_to_first_report(df_removed, df_covid_deaths_RED)
-  n_matching_records_COMP <- unlist(lapply(time_of_first_reporting_COMP, function(ix) {
-    dim(ix)[1]
-  }))
-  
-  if (i != length(n_matching_records)) { # otherwise no vector left to compare!
-    if (!all.equal(n_matching_records[(i + 1):length(n_matching_records)], n_matching_records_COMP[(i + 1):length(n_matching_records_COMP)])) {
-      print(paste0('Error: ', i))
-    }
-  }
-}
-# removing matched records doesn't seem to influence how many records are found for the others, meaning none of the cases where
-# multiple matching records were found are repeats
 
-# Clean up:
-rm(i, df_match, time_of_first_reporting_COMP, n_matching_records_COMP)
+remove_later_retracted_deaths <- function(dat_newDeaths, dat_search, dat_removed, matches, n_matches) {
+  
+  n_matches_COMP1 <- n_matches
+  
+  for (i in which(n_matches == 1)) {
+    
+    df_match <- matches[[i]]
+    
+    # First, identify Bundesland and date, and subtract relevant # of deaths from "new_deaths"
+    dat_newDeaths$AnzahlTodesfall[dat_newDeaths$IdBundesland == df_match$IdBundesland & dat_newDeaths$Datenstand == df_match$Datenstand] <-
+      dat_newDeaths$AnzahlTodesfall[dat_newDeaths$IdBundesland == df_match$IdBundesland & dat_newDeaths$Datenstand == df_match$Datenstand] +
+      dat_removed[i, 'AnzahlTodesfall'] # values in df_removed are negative, so add retracted deaths to # of deaths on relevant date/Bundesland
+    
+    # Also, remove the matched case from df_covid_deaths_RED, to prevent multiple cases matching to the same record:
+    dat_search$AnzahlTodesfall[which(rownames(dat_search) == rownames(df_match))] <-
+      dat_search$AnzahlTodesfall[which(rownames(dat_search) == rownames(df_match))] + dat_removed[i, 'AnzahlTodesfall']
+    dat_search <- dat_search[dat_search$AnzahlTodesfall != 0, ] # positive and negative okay
+    # dat_search <- dat_search[-which(rownames(dat_search) == rownames(df_match)), ]
+    
+    # Now, re-search df_covid_deaths_RED to ensure that all with 1 match (except current) still have 1 match:
+    matches_COMP <- match_to_first_report(dat_removed, dat_search)
+    n_matches_COMP2 <- unlist(lapply(matches_COMP, function(ix) {
+      dim(ix)[1]
+    }))
+    
+    if (i != length(n_matches)) { # otherwise no vector left to compare!
+      if (all.equal(n_matches_COMP1[(i + 1):length(n_matches_COMP1)], n_matches_COMP2[(i + 1):length(n_matches_COMP2)]) != TRUE) {
+        print(paste0('Error: ', i))
+        matches <- matches_COMP
+        n_matches_COMP1 <- n_matches_COMP2
+      }
+    } else {
+      print(table(n_matches_COMP2))
+    }
+    
+  }
+  print(which(n_matches_COMP2 == 1))
+  return(list(dat_newDeaths, dat_search))
+}
+
+res_removed <- remove_later_retracted_deaths(new_deaths, df_covid_deaths_RED, df_removed, time_of_first_reporting, n_matching_records)
+# at end of run there are still 8 records with a single match, even though a corresponding record should have been removed for 3 of these
+# (for total of 154 with 0 matches)
+# are these all where there was a match record with AnzahlTodesfall > 1?
+# time_of_first_reporting[c(9, 70, 96, 131, 133, 134, 137, 162)]
+# first 3 are; other 5 are records that previously had multiple matches and now do not
+new_deaths <- res_removed[[1]]; df_covid_deaths_RED <- res_removed[[2]]
+rm(res_removed)
 
 # Remove records with only 1 unambiguous match from df_removed, and search again:
 df_removed <- df_removed[which(n_matching_records != 1), ]
+# this will deal with issue above - removes all those that PREVIOUSLY had 1 match
 
 # Re-search for matching records on smaller dataframe:
 time_of_first_reporting <- match_to_first_report(df_removed, df_covid_deaths_RED)
 n_matching_records <- unlist(lapply(time_of_first_reporting, function(ix) {
   dim(ix)[1]
 }))
+
+# Since there were some "matches" that applied to multiple records, we now have 1s in n_matching_records again - repeat the above:
+res_removed <- remove_later_retracted_deaths(new_deaths, df_covid_deaths_RED, df_removed, time_of_first_reporting, n_matching_records)
+new_deaths <- res_removed[[1]]; df_covid_deaths_RED <- res_removed[[2]]
+rm(res_removed)
+df_removed <- df_removed[which(n_matching_records != 1), ]
+time_of_first_reporting <- match_to_first_report(df_removed, df_covid_deaths_RED)
+n_matching_records <- unlist(lapply(time_of_first_reporting, function(ix) {
+  dim(ix)[1]
+}))
+
+# And again:
+res_removed <- remove_later_retracted_deaths(new_deaths, df_covid_deaths_RED, df_removed, time_of_first_reporting, n_matching_records)
+new_deaths <- res_removed[[1]]; df_covid_deaths_RED <- res_removed[[2]]
+rm(res_removed)
+df_removed <- df_removed[which(n_matching_records != 1), ]
+time_of_first_reporting <- match_to_first_report(df_removed, df_covid_deaths_RED)
+n_matching_records <- unlist(lapply(time_of_first_reporting, function(ix) {
+  dim(ix)[1]
+}))
+
+# Okay! Now we can move on to where there are multiple matches for each record.
+# Modify the function above to be able to deal with this...
+# And eventually turn this into some sort of loop...
+
+
+
+
+
+
 
 print(dim(unique(df_removed)))
 # So 2 entries have a duplicate - let's assume these do refer to 2 different people
@@ -357,10 +440,17 @@ write.csv(new_deaths, file = 'data_formatted/new_deaths_TEMP.csv', row.names = F
 #######################################################################################################################
 
 # TO EXPLORE:
-# Why last file in April smaller than two before??
+# Why last file in April smaller than two before?
+# Seems to be b/c rows are consolidated; i.e., one row with 2 cases, instead of 2 separate rows
+
+
+
+
 # Are all Bundeslaender contained in every data set??
+
 # Adding all in new_deaths, + April 5, + most of March, minus df_removed -> still missing 49 deaths - check where missing Bundeslaender?
 # (In other words, make sure cumulative equals reported on last day of April/June)
+
 # And obviously add in data from May and June!
 
 ### Adjust dates (Refdatum always at least one ahead of reporting date) ###
@@ -371,9 +461,7 @@ write.csv(new_deaths, file = 'data_formatted/new_deaths_TEMP.csv', row.names = F
 
 # And unify date formats
 
-# For comparison can calculate difference from cumulative deaths on day before (difference between sum of
-# AnzahlTodesfall where NeuerTodesfall 0 or 1 each day); also sum of AnzahlTodesfall where NeuerTodesfall
-# is equal to 1 or -1
+# Check that all files have all necessary libraries loaded
 
 #######################################################################################################################
 
