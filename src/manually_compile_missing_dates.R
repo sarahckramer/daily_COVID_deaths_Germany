@@ -1,7 +1,7 @@
 #######################################################################################################################
-### Manually input data on # of deaths on days with no csv files in the repository (trying to account for retractions)
+### Manually input data on # of deaths on days with no csv files in the repository
 # Author: Sarah Kramer
-# Date: 18/11/2020
+# Date: 20/11/2020
 # Note: CSV files unavailable for April 5, March 9-26
 #######################################################################################################################
 
@@ -31,27 +31,20 @@ df_names <- df_names[order(df_names$Bundesland), ]
 ### Get data for March 9-26 ###
 # Copy cumulative deaths on each date into data frame:
 new_deaths_march <- cbind(df_names,
-                          # as.Date(unlist(lapply(as.list(as.Date('2020-03-09'):as.Date('2020-03-26')),
-                          #                       function(ix) {rep(ix, 16)})),
-                          #         origin = '1970-01-01'),
                           c(0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0), # 9
                           c(0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0), # 10
                           c(0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0), # 11
                           c(1, 1, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0), # 12
                           c(1, 1, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0), # 13
                           c(2, 1, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0), # 14
-                          c(2, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0), # 15 
-                          # 4 in Bavaria might be a 3? (or vice versa)
-                          # two false reports on the 16th - total of 13 instead of 11
-                          # but question is: were 2 false reports already present on the 15th? or the 14th? or only one?
-                          # and was that one present on the 14th, or starting the 15th?
-                          # use reported numbers (4 in Bayern on the 15th) unless larger than later reports
-                          c(2, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0), # 16 # same, and 13 deaths reported; assume 1 is error and use data from 17th
+                          c(3, 4, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0), # 15 
+                          c(3, 5, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0), # 16
                           c(2, 4, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0), # 17
                           c(2, 4, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0), # 18
                           c(6, 8, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0), # 19
                           c(10, 12, 0, 0, 0, 0, 1, 0, 0, 6, 1, 0, 0, 0, 1, 0), # 20
-                          c(16, 19, 1, 0, 0, 0, 2, 0, 0, 6, 1, 0, 0, 0, 1, 0), # 21 # 1 reported in Sachsen-Anhalt but corrected the next day, so set here to 0
+                          c(16, 19, 1, 0, 0, 0, 2, 0, 0, 6, 1, 0, 0, 0, 1, 0), # 21
+                          # 1 reported in Sachsen-Anhalt but corrected the next day, so set here to 0
                           c(21, 21, 1, 0, 0, 0, 2, 0, 1, 6, 2, 0, 0, 0, 1, 0), # 22
                           c(21, 26, 1, 0, 0, 0, 3, 0, 4, 28, 2, 0, 0, 0, 1, 0), # 23
                           c(30, 30, 1, 0, 0, 0, 4, 0, 6, 33, 5, 1, 1, 0, 2, 1), # 24
@@ -71,19 +64,14 @@ new_deaths_march <- melt(new_deaths_march, id.vars = c('Bundesland', 'Bundesland
 # Change column names:
 colnames(new_deaths_march)[4:5] <- c('Datenstand', 'AnzahlTodesfall')
 
-# Ensure none negative:
-print(summary(new_deaths_march$AnzahlTodesfall))
-# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.0000  0.0000  0.0000  0.6875  0.0000 22.0000 
-
 # Convert dates to correct format:
 new_deaths_march$Datenstand <- as.Date(as.numeric(as.character(new_deaths_march$Datenstand)), origin = '1970-01-01')
 
-# Remove where no new deaths:
+# Remove where no new deaths, or where negative:
 new_deaths_march <- new_deaths_march[new_deaths_march$AnzahlTodesfall > 0, ]
 
 # Write to file:
-write.csv(new_deaths_march, file = 'data_formatted/new_deaths_missing_March_COMP.csv', row.names = FALSE)
+write.csv(new_deaths_march, file = 'data_formatted/new_deaths_missing_March.csv', row.names = FALSE)
 
 # Clean up:
 rm(new_deaths_march)
@@ -97,8 +85,6 @@ new_deaths_apr5 <- cbind(df_names,
                          c(367, 396, 24, 17, 6, 19, 56, 5, 89, 245, 32, 14, 32, 12, 18, 10),
                          c(316, 349, 22, 12, 6, 16, 42, 5, 85, 200, 29, 14, 24, 11, 17, 10))
 names(new_deaths_apr5)[4:6] <- c('Datenstand', 'new_t', 'new_tminus1')
-# Even though cumulative counts from official report on 04-04 don't match the dataset here completely, use this
-# process b/c we want the NEW deaths reported on 05-04, which we can only get by subtracting between reports
 
 # Subtract previous day's total from "current" day's total:
 new_deaths_apr5$AnzahlTodesfall <- new_deaths_apr5$new_t - new_deaths_apr5$new_tminus1
@@ -110,14 +96,7 @@ new_deaths_apr5 <- new_deaths_apr5[new_deaths_apr5$AnzahlTodesfall > 0, ]
 new_deaths_apr5 <- new_deaths_apr5[, c(1:4, 7)]
 
 # Write to file:
-write.csv(new_deaths_apr5, file = 'data_formatted/new_deaths_missing_April5_COMP.csv', row.names = FALSE)
+write.csv(new_deaths_apr5, file = 'data_formatted/new_deaths_missing_April5.csv', row.names = FALSE)
 
 # Clean up:
 rm(list = ls())
-
-#######################################################################################################################
-
-### Notes ###
-# I don't think there is any way to account for whether or not any of these deaths were later removed from the data,
-# though; and data here are differences between the day in question and the day before, not necessarily newly-
-# reported deaths
