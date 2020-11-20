@@ -1,54 +1,17 @@
 #######################################################################################################################
-### Get number of new deaths by day, by Bundesland, from archived RKI data
+### Attempt to correct for retractions by identifying when death first reported
 # Author: Sarah Kramer
 # Date: 17/11/2020
-# Note: Here we are interested in the first "wave" only (March - June)
 #######################################################################################################################
-
-# Load necessary libraries:
-library(stringr)
 
 # Load all necessary functions:
-source('src/functions_for_matching_retractions.R')
-
-#######################################################################################################################
-
-### Check for any missing files ###
-# First 2 deaths reported in Nordrhein-Westfalen on 09/03; data here start on 27/03
-# We may need to find some way (combo of pdfs on RKI's site and news articles) to fill in the early deaths
-
-# Get list of files for each month:
-file_list_March <- list.files('data_RKI/Maerz/', pattern = '.csv') # 27-31/03
-file_list_April <- list.files('data_RKI/April/', pattern = '.csv') # missing 1
-file_list_May <- list.files('data_RKI/Mai/', pattern = '.csv') # complete
-file_list_June <- list.files('data_RKI/Juni/', pattern = '.csv') # complete
-# but could look at later too, if only because they could help rule out mistakenly-reported deaths
-
-# Check for missing:
-which(!unlist(lapply(str_pad(string = 1:30, width = 2, pad = 0), function(ix) {
-  file.exists(paste0('data_RKI/April/RKI_COVID19_2020-04-', ix, '.csv'))
-})))
-which(!unlist(lapply(str_pad(string = 1:31, width = 2, pad = 0), function(ix) {
-  file.exists(paste0('data_RKI/Mai/RKI_COVID19_2020-05-', ix, '.csv'))
-})))
-which(!unlist(lapply(str_pad(string = 1:30, width = 2, pad = 0), function(ix) {
-  file.exists(paste0('data_RKI/Juni/RKI_COVID19_2020-06-', ix, '.csv'))
-})))
-# only April 5 is missing - can get data from pdf
-
-# # Clean up:
-rm(file_list_March, file_list_April, file_list_May, file_list_June)
+source('src/match_retractions_to_initial_report/functions_for_matching_retractions.R')
 
 #######################################################################################################################
 
 ### Read in and format data ###
 # Read all data into list:
 source('src/read_data_to_list.R')
-
-# # Check that size of files grows over time:
-# print(lapply(list_covid_deaths, function(ix) {dim(ix)}))
-# # Why last file in April smaller than two before?
-# # Seems to be b/c rows are consolidated; i.e., one row with 2 cases, instead of 2 separate rows
 
 # Standardize column names:
 source('src/standardize_relevant_column_names.R', encoding = 'UTF-8')
@@ -205,49 +168,12 @@ new_deaths <- new_deaths[new_deaths$AnzahlTodesfall > 0, ]
 # Write new deaths by date of reporting:
 write.csv(new_deaths, file = 'data_formatted/new_deaths_SEARCHED.csv', row.names = FALSE)
 
+# Clean up:
+rm(list = ls())
+
 #######################################################################################################################
-
-# TO EXPLORE:
-
-# Are all Bundeslaender contained in every data set??
-# Note: April 16 seems to be missing Bundeslaender 10-16?
-
-# And unify date formats
-
-# Comment all functions
-
-# Check that all files have all necessary libraries loaded
-
-# Redo manual add-in of March and April 5 based on official reports
-
-
-
-
-# # Make sure cumulative equals reported on last day of April/June):
-# new_deaths_march <- read.csv('data_formatted/new_deaths_missing_March.csv')
-# new_deaths_april <- read.csv('data_formatted/new_deaths_missing_April5.csv')
-# 
-# new_deaths_march$Datenstand <- as.Date(new_deaths_march$Datenstand, format = '%Y-%m-%d')
-# new_deaths_april$Datenstand <- as.Date(new_deaths_april$Datenstand, format = '%Y-%m-%d')
-# 
-# new_deaths <- rbind(new_deaths, new_deaths_march, new_deaths_april)
-# # even with these included we're still noticeably underestimating total deaths reported on April 30 in most regions
-# # (overestimating in Nordrhein-Westfalen (by 7) and Schleswig-Holstein (by 1))
-
-
-
-
-
 
 # Potential next steps:
 # Maybe ultimately read in later data as well, to see if any of the reported deaths from first wave were later "retracted"?
-
-
-
-#######################################################################################################################
-
-#######################################################################################################################
-
-#######################################################################################################################
-
-#######################################################################################################################
+# Add in data from April 16
+# Check against cumulative counts in official reports at various timepoints
