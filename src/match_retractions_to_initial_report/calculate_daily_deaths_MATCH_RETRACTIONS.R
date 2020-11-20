@@ -218,6 +218,7 @@ write.csv(new_deaths, file = 'data_formatted/new_deaths_SEARCHED.csv', row.names
 
 # Check that all files have all necessary libraries loaded
 
+# Redo manual add-in of March and April 5 based on official reports
 
 
 
