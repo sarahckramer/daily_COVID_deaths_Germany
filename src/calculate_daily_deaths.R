@@ -1,18 +1,52 @@
 #######################################################################################################################
-### For comparison, calculate the change in total reported deaths by day
+### Get number of new deaths by day, by Bundesland, from archived RKI data
 # Author: Sarah Kramer
 # Date: 19/11/2020
 # Note: These should produce estimates equal to official reports
+# Note: Here we are interested in the first "wave" only (March - June)
 #######################################################################################################################
 
 # Load necessary libraries:
+library(stringr)
 library(reshape2)
+
+#######################################################################################################################
+### Check for any missing files ###
+# First 2 deaths reported in Nordrhein-Westfalen on 09/03; data here start on 27/03
+# We may need to find some way (combo of pdfs on RKI's site and news articles) to fill in the early deaths
+
+# Get list of files for each month:
+file_list_March <- list.files('data_RKI/Maerz/', pattern = '.csv') # 27-31/03
+file_list_April <- list.files('data_RKI/April/', pattern = '.csv') # missing 1
+file_list_May <- list.files('data_RKI/Mai/', pattern = '.csv') # complete
+file_list_June <- list.files('data_RKI/Juni/', pattern = '.csv') # complete
+# but could look at later too, if only because they could help rule out mistakenly-reported deaths
+
+# Check for missing:
+which(!unlist(lapply(str_pad(string = 1:30, width = 2, pad = 0), function(ix) {
+  file.exists(paste0('data_RKI/April/RKI_COVID19_2020-04-', ix, '.csv'))
+})))
+which(!unlist(lapply(str_pad(string = 1:31, width = 2, pad = 0), function(ix) {
+  file.exists(paste0('data_RKI/Mai/RKI_COVID19_2020-05-', ix, '.csv'))
+})))
+which(!unlist(lapply(str_pad(string = 1:30, width = 2, pad = 0), function(ix) {
+  file.exists(paste0('data_RKI/Juni/RKI_COVID19_2020-06-', ix, '.csv'))
+})))
+# only April 5 is missing - can get data from pdf
+
+# # Clean up:
+rm(file_list_March, file_list_April, file_list_May, file_list_June)
 
 #######################################################################################################################
 
 ### Read in and format data ###
 # Read in data:
 source('src/read_data_to_list.R')
+
+# # Check that size of files grows over time:
+# print(lapply(list_covid_deaths, function(ix) {dim(ix)}))
+# # Why last file in April smaller than two before?
+# # Seems to be b/c rows are consolidated; i.e., one row with 2 cases, instead of 2 separate rows
 
 # Format important columns:
 source('src/standardize_relevant_column_names.R', encoding = 'UTF-8')
@@ -75,19 +109,19 @@ delta_deaths <- delta_deaths[order(delta_deaths$Datenstand), ]
 
 ### Replace NAs with 0s ###
 # Start by converting to wide format:
-
-
-
-
-
-
-
-
 delta_deaths_WIDE <- dcast(Bundesland + Bundesland_ENG + IdBundesland ~ Datenstand, value.var = 'AnzahlTodesfall',
                            data = delta_deaths)
 
 # Now replace any NAs with 0s:
 delta_deaths_WIDE[, 4:dim(delta_deaths_WIDE)[2]][is.na(delta_deaths_WIDE[, 4:dim(delta_deaths_WIDE)[2]])] <- 0
+
+# And add columns where dates missing (03-10, 03-13, 03-18, 06-21):
+delta_deaths_WIDE <- cbind(delta_deaths_WIDE, rep(0, 16), rep(0, 16), rep(0, 16), rep(0, 16))
+names(delta_deaths_WIDE)[(dim(delta_deaths_WIDE)[2] - 3):(dim(delta_deaths_WIDE)[2])] <-
+  c('2020-03-10', '2020-03-13', '2020-03-18', '2020-06-21')
+delta_deaths_WIDE <- cbind(delta_deaths_WIDE[, 1:3],
+                           delta_deaths_WIDE[, 4:(dim(delta_deaths_WIDE)[2])][,order(as.Date(colnames(
+                             delta_deaths_WIDE)[4:(dim(delta_deaths_WIDE)[2])]))])
 
 #######################################################################################################################
 
@@ -129,7 +163,7 @@ delta_deaths_WIDE[, 4:dim(delta_deaths_WIDE)[2]] <- apply(delta_deaths_WIDE[, 4:
 #######################################################################################################################
 
 ### Output data ###
-# First melt data frame with 0s and Total counts included:
+# First melt data frame with 0s and total counts included:
 delta_deaths <- melt(delta_deaths_WIDE, id.vars = colnames(delta_deaths_WIDE)[1:3])
 
 # Correct column names:
