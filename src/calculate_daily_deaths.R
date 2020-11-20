@@ -50,18 +50,23 @@ delta_deaths <- delta_deaths[delta_deaths$AnzahlTodesfall > 0, ]
 
 #######################################################################################################################
 
-### Add in estimates from March 9-26; April 5 ###
+### Add in estimates from March 9-26; April 5; April 16 ###
 # Read in data:
 delta_deaths_march <- read.csv('data_formatted/new_deaths_missing_March.csv')
-delta_deaths_april <- read.csv('data_formatted/new_deaths_missing_April5.csv')
+delta_deaths_april5 <- read.csv('data_formatted/new_deaths_missing_April5.csv')
+delta_deaths_april16 <- read.csv('data_formatted/new_deaths_missing_April16.csv')
 
 # Convert Datenstand column to date:
 delta_deaths_march$Datenstand <- as.Date(delta_deaths_march$Datenstand, format = '%Y-%m-%d')
-delta_deaths_april$Datenstand <- as.Date(delta_deaths_april$Datenstand, format = '%Y-%m-%d')
+delta_deaths_april5$Datenstand <- as.Date(delta_deaths_april5$Datenstand, format = '%Y-%m-%d')
+delta_deaths_april16$Datenstand <- as.Date(delta_deaths_april16$Datenstand, format = '%Y-%m-%d')
+
+# Remove April 16 from delta_deaths before adding in corrected:
+delta_deaths <- delta_deaths[delta_deaths$Datenstand != '2020-04-16', ]
 
 # Combine all into one data frame:
-delta_deaths <- rbind(delta_deaths_march, delta_deaths, delta_deaths_april)
-rm(delta_deaths_march, delta_deaths_april)
+delta_deaths <- rbind(delta_deaths, delta_deaths_march, delta_deaths_april5, delta_deaths_april16)
+rm(delta_deaths_march, delta_deaths_april5, delta_deaths_april16)
 
 # Sort by date of reporting:
 delta_deaths <- delta_deaths[order(delta_deaths$Datenstand), ]
@@ -70,6 +75,14 @@ delta_deaths <- delta_deaths[order(delta_deaths$Datenstand), ]
 
 ### Replace NAs with 0s ###
 # Start by converting to wide format:
+
+
+
+
+
+
+
+
 delta_deaths_WIDE <- dcast(Bundesland + Bundesland_ENG + IdBundesland ~ Datenstand, value.var = 'AnzahlTodesfall',
                            data = delta_deaths)
 
@@ -79,9 +92,15 @@ delta_deaths_WIDE[, 4:dim(delta_deaths_WIDE)[2]][is.na(delta_deaths_WIDE[, 4:dim
 #######################################################################################################################
 
 ### Calculate total deaths at the country level ###
+delta_deaths_WIDE$Bundesland <- as.character(delta_deaths_WIDE$Bundesland)
+delta_deaths_WIDE$Bundesland_ENG <- as.character(delta_deaths_WIDE$Bundesland_ENG)
+
 delta_deaths_WIDE <- rbind(delta_deaths_WIDE,
                            c('Total', 'Total', '99',
                              colSums(delta_deaths_WIDE[, 4:dim(delta_deaths_WIDE)[2]])))
+
+delta_deaths_WIDE$Bundesland <- factor(delta_deaths_WIDE$Bundesland)
+delta_deaths_WIDE$Bundesland_ENG <- factor(delta_deaths_WIDE$Bundesland_ENG)
 
 # And convert all back to numeric:
 delta_deaths_WIDE[, 4:dim(delta_deaths_WIDE)[2]] <- apply(delta_deaths_WIDE[, 4:dim(delta_deaths_WIDE)[2]],
@@ -89,20 +108,23 @@ delta_deaths_WIDE[, 4:dim(delta_deaths_WIDE)[2]] <- apply(delta_deaths_WIDE[, 4:
 
 #######################################################################################################################
 
-### Ensure that counts on these days match official reports ###
-# Start by calculating cumulative deaths each day:
-delta_deaths_total <- delta_deaths_WIDE
-for (i in dim(delta_deaths_total)[2]:5) {
-  delta_deaths_total[, i] <- rowSums(delta_deaths_total[, 4:i])
-}; rm(i)
-
-# Compare to counts on: April 4-6; April 30; May 31; June 30
-
-
-
-
-
-
+# ### Ensure that counts on these days match official reports ###
+# # Start by calculating cumulative deaths each day:
+# delta_deaths_total <- delta_deaths_WIDE
+# for (i in dim(delta_deaths_total)[2]:5) {
+#   delta_deaths_total[, i] <- rowSums(delta_deaths_total[, 4:i])
+# }; rm(i)
+# 
+# # Compare to counts on: April 4-6; April 30; May 31; June 30
+# 
+# delta_deaths_total$`2020-04-04` # Baden-Wuerttemberg and Bayern over by 1 (likely b/c I removed an early -1 for both!)
+# delta_deaths_total$`2020-04-05` # same
+# delta_deaths_total$`2020-04-06` # same
+# delta_deaths_total$`2020-04-30` # same; Thueringen over by 10
+# delta_deaths_total$`2020-05-31` # same; same; Berlin over by 2; Bremen by 1; Saarland by 3; Sachsen by 2
+# delta_deaths_total$`2020-06-30` # BW by 2; Bayern by 6; Berlin by same; Bremen 2; Saarland by same; Sachsen by 7; Thueringen by 11
+# # I'm guessing most of this is that I set sums of -1 to 0...
+# # Check this assumption (DONE): Do we "correct" for this by reducing counts by 1 the day before a negative? Or let it be?
 
 #######################################################################################################################
 
@@ -122,21 +144,3 @@ write.csv(delta_deaths_WIDE, file = 'data_formatted/new_deaths_WIDE.csv', row.na
 
 # Clean up:
 rm(list = ls())
-
-#######################################################################################################################
-
-### Preliminary plot of data over time ###
-# Goal is just to see if there is a super clear weekend effect
-library(ggplot2)
-p1 <- ggplot(data = delta_deaths, aes(x = Datenstand, y = AnzahlTodesfall)) + geom_line() +
-  theme_classic() + facet_wrap(~ Bundesland_ENG)
-print(p1)
-
-# NOTE: Might still need to update this if some Bundeslaender are missing from some dates!
-
-
-
-
-
-
-
