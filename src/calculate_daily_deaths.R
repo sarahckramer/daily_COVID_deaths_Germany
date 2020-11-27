@@ -39,6 +39,12 @@ rm(file_list_March, file_list_April, file_list_May, file_list_June)
 
 #######################################################################################################################
 
+### Compile missing data ###
+source('src/manually_compile_missing_dates.R')
+source('src/manually_compile_missing_Bundeslaender.R')
+
+#######################################################################################################################
+
 ### Read in and format data ###
 # Read in data:
 source('src/read_data_to_list.R')
