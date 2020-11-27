@@ -163,52 +163,9 @@ colnames(delta_deaths)[4:5] <- c('Datenstand', 'AnzahlTodesfall')
 # Convert 'Datenstand' to date:
 delta_deaths$Datenstand <- as.Date(delta_deaths$Datenstand, format = '%Y-%m-%d')
 
-#######################################################################################################################
-
-# # Explore: Set negatives to zero, but subtract the same amount from the previous day's total:
-# delta_deaths <- delta_deaths[delta_deaths$Bundesland != 'Total', ]
-# delta_deaths$Bundesland <- factor(delta_deaths$Bundesland)
-# 
-# delta_deaths_ORIG <- delta_deaths
-# 
-# index_neg <- which(delta_deaths$AnzahlTodesfall < 0)
-# while (length(index_neg) > 0) {
-#   for (i in index_neg) {
-#     delta_deaths$AnzahlTodesfall[delta_deaths$Bundesland == delta_deaths$Bundesland[i] &
-#                                    delta_deaths$Datenstand == delta_deaths$Datenstand[i] - 1] <-
-#       delta_deaths$AnzahlTodesfall[delta_deaths$Bundesland == delta_deaths$Bundesland[i] &
-#                                      delta_deaths$Datenstand == delta_deaths$Datenstand[i] - 1] +
-#       delta_deaths$AnzahlTodesfall[delta_deaths$Bundesland == delta_deaths$Bundesland[i] &
-#                                      delta_deaths$Datenstand == delta_deaths$Datenstand[i]]
-# 
-#     delta_deaths$AnzahlTodesfall[delta_deaths$Bundesland == delta_deaths$Bundesland[i] &
-#                                    delta_deaths$Datenstand == delta_deaths$Datenstand[i]] <- 0
-#   }
-# 
-#   index_neg <- which(delta_deaths$AnzahlTodesfall < 0)
-# }; rm(index_neg, i)
-# 
-# delta_deaths_WIDE <- dcast(Bundesland + Bundesland_ENG + IdBundesland ~ Datenstand, value.var = 'AnzahlTodesfall',
-#                            data = delta_deaths)
-# 
-# delta_deaths_total <- delta_deaths_WIDE
-# for (i in dim(delta_deaths_total)[2]:5) {
-#   delta_deaths_total[, i] <- rowSums(delta_deaths_total[, 4:i])
-# }; rm(i)
-# 
-# delta_deaths_total$`2020-03-26` # same
-# delta_deaths_total$`2020-04-30` # same
-# delta_deaths_total$`2020-05-31` # same; now Saxony UNDER by 2?
-# delta_deaths_total$`2020-06-02`[13] # Saxony back to being equal
-# delta_deaths_total$`2020-06-30` # same; Saxony back to normal
-# # so the day-by-day cumulative values do not exactly match, but overall they come out the same by the end of the wave
-# # there will be differences on the day(s) before the negative report, but those will be remedied on the day OF the negative report
-
-#######################################################################################################################
-
-# # Write to file:
-# write.csv(delta_deaths, file = 'data_formatted/new_deaths_LONG.csv', row.names = FALSE)
-# write.csv(delta_deaths_WIDE, file = 'data_formatted/new_deaths_WIDE.csv', row.names = FALSE)
+# Write to file:
+write.csv(delta_deaths, file = 'data_formatted/new_deaths_LONG.csv', row.names = FALSE)
+write.csv(delta_deaths_WIDE, file = 'data_formatted/new_deaths_WIDE.csv', row.names = FALSE)
 
 # Clean up:
 rm(list = ls())
