@@ -79,8 +79,8 @@ levels(delta_deaths$Bundesland_ENG) <- c('Baden-Wuerttemberg', 'Bavaria', 'Berli
 # Reorder columns:
 delta_deaths <- delta_deaths[, c(1, 5, 2:4)]
 
-# Remove 0s and negatives:
-delta_deaths <- delta_deaths[delta_deaths$AnzahlTodesfall > 0, ]
+# # Remove 0s and negatives:
+# delta_deaths <- delta_deaths[delta_deaths$AnzahlTodesfall > 0, ]
 
 #######################################################################################################################
 
@@ -115,14 +115,6 @@ delta_deaths_WIDE <- dcast(Bundesland + Bundesland_ENG + IdBundesland ~ Datensta
 # Now replace any NAs with 0s:
 delta_deaths_WIDE[, 4:dim(delta_deaths_WIDE)[2]][is.na(delta_deaths_WIDE[, 4:dim(delta_deaths_WIDE)[2]])] <- 0
 
-# And add columns where dates missing (03-10, 03-13, 03-18, 06-21):
-delta_deaths_WIDE <- cbind(delta_deaths_WIDE, rep(0, 16), rep(0, 16), rep(0, 16), rep(0, 16))
-names(delta_deaths_WIDE)[(dim(delta_deaths_WIDE)[2] - 3):(dim(delta_deaths_WIDE)[2])] <-
-  c('2020-03-10', '2020-03-13', '2020-03-18', '2020-06-21')
-delta_deaths_WIDE <- cbind(delta_deaths_WIDE[, 1:3],
-                           delta_deaths_WIDE[, 4:(dim(delta_deaths_WIDE)[2])][,order(as.Date(colnames(
-                             delta_deaths_WIDE)[4:(dim(delta_deaths_WIDE)[2])]))])
-
 #######################################################################################################################
 
 ### Calculate total deaths at the country level ###
@@ -151,14 +143,13 @@ delta_deaths_WIDE[, 4:dim(delta_deaths_WIDE)[2]] <- apply(delta_deaths_WIDE[, 4:
 # 
 # # Compare to counts on: April 4-6; April 30; May 31; June 30
 # 
-# delta_deaths_total$`2020-04-04` # Baden-Wuerttemberg and Bayern over by 1 (likely b/c I removed an early -1 for both!)
+# delta_deaths_total$`2020-03-26` # same
+# delta_deaths_total$`2020-04-04` # same
 # delta_deaths_total$`2020-04-05` # same
 # delta_deaths_total$`2020-04-06` # same
-# delta_deaths_total$`2020-04-30` # same; Thueringen over by 10
-# delta_deaths_total$`2020-05-31` # same; same; Berlin over by 2; Bremen by 1; Saarland by 3; Sachsen by 2
-# delta_deaths_total$`2020-06-30` # BW by 2; Bayern by 6; Berlin by same; Bremen 2; Saarland by same; Sachsen by 7; Thueringen by 11
-# # I'm guessing most of this is that I set sums of -1 to 0...
-# # Check this assumption (DONE): Do we "correct" for this by reducing counts by 1 the day before a negative? Or let it be?
+# delta_deaths_total$`2020-06-30` # same
+# 
+# rm(delta_deaths_total)
 
 #######################################################################################################################
 
@@ -172,9 +163,52 @@ colnames(delta_deaths)[4:5] <- c('Datenstand', 'AnzahlTodesfall')
 # Convert 'Datenstand' to date:
 delta_deaths$Datenstand <- as.Date(delta_deaths$Datenstand, format = '%Y-%m-%d')
 
-# Write to file:
-write.csv(delta_deaths, file = 'data_formatted/new_deaths_LONG.csv', row.names = FALSE)
-write.csv(delta_deaths_WIDE, file = 'data_formatted/new_deaths_WIDE.csv', row.names = FALSE)
+#######################################################################################################################
+
+# # Explore: Set negatives to zero, but subtract the same amount from the previous day's total:
+# delta_deaths <- delta_deaths[delta_deaths$Bundesland != 'Total', ]
+# delta_deaths$Bundesland <- factor(delta_deaths$Bundesland)
+# 
+# delta_deaths_ORIG <- delta_deaths
+# 
+# index_neg <- which(delta_deaths$AnzahlTodesfall < 0)
+# while (length(index_neg) > 0) {
+#   for (i in index_neg) {
+#     delta_deaths$AnzahlTodesfall[delta_deaths$Bundesland == delta_deaths$Bundesland[i] &
+#                                    delta_deaths$Datenstand == delta_deaths$Datenstand[i] - 1] <-
+#       delta_deaths$AnzahlTodesfall[delta_deaths$Bundesland == delta_deaths$Bundesland[i] &
+#                                      delta_deaths$Datenstand == delta_deaths$Datenstand[i] - 1] +
+#       delta_deaths$AnzahlTodesfall[delta_deaths$Bundesland == delta_deaths$Bundesland[i] &
+#                                      delta_deaths$Datenstand == delta_deaths$Datenstand[i]]
+# 
+#     delta_deaths$AnzahlTodesfall[delta_deaths$Bundesland == delta_deaths$Bundesland[i] &
+#                                    delta_deaths$Datenstand == delta_deaths$Datenstand[i]] <- 0
+#   }
+# 
+#   index_neg <- which(delta_deaths$AnzahlTodesfall < 0)
+# }; rm(index_neg, i)
+# 
+# delta_deaths_WIDE <- dcast(Bundesland + Bundesland_ENG + IdBundesland ~ Datenstand, value.var = 'AnzahlTodesfall',
+#                            data = delta_deaths)
+# 
+# delta_deaths_total <- delta_deaths_WIDE
+# for (i in dim(delta_deaths_total)[2]:5) {
+#   delta_deaths_total[, i] <- rowSums(delta_deaths_total[, 4:i])
+# }; rm(i)
+# 
+# delta_deaths_total$`2020-03-26` # same
+# delta_deaths_total$`2020-04-30` # same
+# delta_deaths_total$`2020-05-31` # same; now Saxony UNDER by 2?
+# delta_deaths_total$`2020-06-02`[13] # Saxony back to being equal
+# delta_deaths_total$`2020-06-30` # same; Saxony back to normal
+# # so the day-by-day cumulative values do not exactly match, but overall they come out the same by the end of the wave
+# # there will be differences on the day(s) before the negative report, but those will be remedied on the day OF the negative report
+
+#######################################################################################################################
+
+# # Write to file:
+# write.csv(delta_deaths, file = 'data_formatted/new_deaths_LONG.csv', row.names = FALSE)
+# write.csv(delta_deaths_WIDE, file = 'data_formatted/new_deaths_WIDE.csv', row.names = FALSE)
 
 # Clean up:
 rm(list = ls())

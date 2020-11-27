@@ -67,8 +67,8 @@ colnames(new_deaths_march)[4:5] <- c('Datenstand', 'AnzahlTodesfall')
 # Convert dates to correct format:
 new_deaths_march$Datenstand <- as.Date(as.numeric(as.character(new_deaths_march$Datenstand)), origin = '1970-01-01')
 
-# Remove where no new deaths, or where negative:
-new_deaths_march <- new_deaths_march[new_deaths_march$AnzahlTodesfall > 0, ]
+# # Remove where no new deaths, or where negative:
+# new_deaths_march <- new_deaths_march[new_deaths_march$AnzahlTodesfall > 0, ]
 
 # Write to file:
 write.csv(new_deaths_march, file = 'data_formatted/new_deaths_missing_March.csv', row.names = FALSE)
@@ -89,8 +89,8 @@ names(new_deaths_apr5)[4:6] <- c('Datenstand', 'new_t', 'new_tminus1')
 # Subtract previous day's total from "current" day's total:
 new_deaths_apr5$AnzahlTodesfall <- new_deaths_apr5$new_t - new_deaths_apr5$new_tminus1
 
-# Remove where 0 deaths:
-new_deaths_apr5 <- new_deaths_apr5[new_deaths_apr5$AnzahlTodesfall > 0, ]
+# # Remove where 0 deaths:
+# new_deaths_apr5 <- new_deaths_apr5[new_deaths_apr5$AnzahlTodesfall > 0, ]
 
 # Remove unnecessary columns:
 new_deaths_apr5 <- new_deaths_apr5[, c(1:4, 7)]

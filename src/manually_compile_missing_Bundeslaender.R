@@ -57,8 +57,6 @@ new_deaths_apr16 <- cbind(df_names,
                           c(767, 954, 62, 42, 21, 67, 173, 11, 224, 607, 77, 58, 73, 26, 54, 38))
 names(new_deaths_apr16)[4:6] <- c('Datenstand', 'new_t', 'new_tminus1')
 
-# c(802, 1049, 74, 54, 21, 80, 187, 13, 248, 663, 87, 71, 94, 26, 55, 45) - c(767, 954, 62, 42, 21, 67, 173, 11, 224, 607, 77, 58, 73, 26, 54, 38)
-
 # Subtract previous day's total from "current" day's total:
 new_deaths_apr16$AnzahlTodesfall <- new_deaths_apr16$new_t - new_deaths_apr16$new_tminus1
 
